@@ -1,0 +1,19 @@
+[package]
+name = "themeparks"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# A simple to use, efficient, and full-featured Command Line Argument Parser
+clap = { version = "3.0", features = ["derive"] }
+
+# Higher level HTTP client library
+reqwest = { version = "0.11.12", features = ["json"] }
+
+#A generic serialization/deserialization framework
+serde = { version = "1.0.145", features = ["derive"] }
+
+# An event-driven, non-blocking I/O platform for writing asynchronous I/O backed applications.
+tokio = { version = "1", features = ["full"] }
