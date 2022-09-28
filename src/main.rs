@@ -13,16 +13,11 @@ use clap::Parser;
 use serde::Deserialize;
 use prelude::*;
 
-
-#[derive(clap::Parser, Debug)]
+#[derive(clap::Parser)]
+#[clap(author, version, about, long_about = None)] // Read from `Cargo.toml`
 struct Arguments {
-    #[clap(subcommand)]
-    action: Action,
-}
-
-#[derive(clap::Subcommand, Debug)]
-enum Action {
-    Destinations,
+    #[clap(long, value_parser)]
+    filter: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -32,37 +27,41 @@ struct DestinationsApiResponse {
 
 #[derive(Deserialize, Debug)]
 struct Destination {
-    id: String,
-    name: String,
     slug: String,
     parks: Vec<Park>,
 }
 
 #[derive(Deserialize, Debug)]
-struct Park {
-    id: String,
-    name: String,
-}
+struct Park {}
 
-async fn get_destinations(client: reqwest::Client) -> Result<Vec<Destination>, reqwest::Error> {
+async fn get_destinations(
+    client: reqwest::Client,
+    filter: &Option<String>
+) -> Result<Vec<Destination>, reqwest::Error> {
     let url = format!("{}/{}", BASE_URL, "destinations");
     println!("fetching {}", url);
 
     let response = client.get(&url).send().await?;
     let data = response.json::<DestinationsApiResponse>().await?;
 
-    Ok(data.destinations)
+    let mut destinations = data.destinations;
+
+    if let Some(f) = filter {
+        let slugs: Vec<&str> = f.split(",").collect();
+        destinations = destinations
+            .into_iter()
+            .filter(|d| slugs.contains(&d.slug.as_str()))
+            .collect::<Vec<Destination>>();
+    }
+
+    Ok(destinations)
 }
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
     let args = Arguments::parse();
-    match args.action {
-        Action::Destinations => {
-            let client = Client::new()?;
-
-            get_destinations(client).await?;
-        }
-    }
+    let client = Client::new()?;
+    let destinations = get_destinations(client, &args.filter).await?;
+    println!("{:?}", destinations);
     Ok(())
 }
